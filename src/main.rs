@@ -19,12 +19,16 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Command {
-    Import {
-        file: PathBuf,
-    },
+    /// imports video details from bigquery new line separated table dump
+    Import { file: PathBuf },
+    /// inserts from local index to stdb
     Insert {
         /// rfc 3339 preferably, or rfc 2822. Non-inclusive
+        #[arg(long, short)]
         cutoff: chrono::DateTime<Utc>,
+        /// access token to stdb
+        #[arg(long, short)]
+        token: String,
     },
 }
 
@@ -34,6 +38,6 @@ async fn main() -> anyhow::Result<()> {
 
     match args.command {
         Command::Import { file } => import(file).await,
-        Command::Insert { cutoff } => insert_to_stdb(cutoff).await,
+        Command::Insert { cutoff, token } => insert_to_stdb(cutoff, token).await,
     }
 }

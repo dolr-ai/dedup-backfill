@@ -20,7 +20,7 @@ use crate::{
     },
 };
 
-pub async fn insert_to_stdb(cutoff: chrono::DateTime<Utc>) -> anyhow::Result<()> {
+pub async fn insert_to_stdb(cutoff: chrono::DateTime<Utc>, token: String) -> anyhow::Result<()> {
     let store = open_store()?;
     let video_hashes = get_hash_bucket(&store)?;
     let results = get_task_bucket(&store)?;
@@ -38,14 +38,18 @@ pub async fn insert_to_stdb(cutoff: chrono::DateTime<Utc>) -> anyhow::Result<()>
             None => Default::default(),
         };
 
-        // let value = dbg!(value);
-
         if matches!(value, InsertTaskState::Inserted) {
             skipped += 1;
             continue;
         }
 
         let Json(value) = hash.value().expect("this doesn't really fail");
+
+        // every video that _after_ and _including_ cutoff is to be excluded
+        if value.timestamp >= cutoff.into() {
+            skipped += 1;
+            continue;
+        }
 
         work_items.insert(key, value);
     }
@@ -68,9 +72,9 @@ pub async fn insert_to_stdb(cutoff: chrono::DateTime<Utc>) -> anyhow::Result<()>
     let result_tx = Arc::new(result_tx);
 
     let ctx = dedup_index::DbConnection::builder()
-        .with_uri("http://localhost:5000")
-        .with_token(None::<&str>)
-        .with_module_name("local-dedup-index")
+        .with_uri("https://maincloud.spacetimedb.com/")
+        .with_token(Some(token))
+        .with_module_name("yral-dedup-index")
         .build()?;
 
     let ctx = Arc::new(ctx);
