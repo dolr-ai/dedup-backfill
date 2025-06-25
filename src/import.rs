@@ -57,6 +57,10 @@ pub async fn import(file: impl AsRef<Path>) -> anyhow::Result<()> {
 
     drop(bar);
 
+    println!("bucket length: {}", hash_bucket.len());
+
+    drop(store);
+
     println!("imported {counter} ids");
     Ok(())
 }
