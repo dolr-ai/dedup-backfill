@@ -39,12 +39,16 @@ pub async fn import(file: impl AsRef<Path>) -> anyhow::Result<()> {
             created_at,
         }: BqDumpFormat = serde_json::from_str(&line).context("Coulnd't parse line")?;
 
+        let prev_timestamp: Option<_> = hash_bucket.get(&video_id)?.map(|Json(v)| v.timestamp);
+        let min_time = prev_timestamp
+            .map(|t| t.min(created_at.into()))
+            .unwrap_or(created_at.into());
         hash_bucket
             .set(
                 &video_id,
                 &Json(VideoHashFromBQ {
                     video_hash: videohash,
-                    timestamp: created_at.into(),
+                    timestamp: min_time,
                 }),
             )
             .context("Couldn't insert video id")?;
@@ -57,10 +61,12 @@ pub async fn import(file: impl AsRef<Path>) -> anyhow::Result<()> {
 
     drop(bar);
 
-    println!("bucket length: {}", hash_bucket.len());
+    println!("Processed {counter} items");
+    println!("Imported {} ids", hash_bucket.len());
 
-    drop(store);
+    if hash_bucket.len() != counter {
+        println!("Counts do not match because bq has duplicate entries for video_id");
+    }
 
-    println!("imported {counter} ids");
     Ok(())
 }

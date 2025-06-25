@@ -27,6 +27,7 @@ pub async fn insert_to_stdb(cutoff: chrono::DateTime<Utc>, token: String) -> any
 
     let mut work_items = BTreeMap::new();
     let mut skipped = 0;
+    let mut time_cutoff = 0;
     let mut total = 0;
     for hash in video_hashes.iter() {
         total += 1;
@@ -47,7 +48,7 @@ pub async fn insert_to_stdb(cutoff: chrono::DateTime<Utc>, token: String) -> any
 
         // every video that _after_ and _including_ cutoff is to be excluded
         if value.timestamp >= cutoff.into() {
-            skipped += 1;
+            time_cutoff += 1;
             continue;
         }
 
@@ -56,7 +57,15 @@ pub async fn insert_to_stdb(cutoff: chrono::DateTime<Utc>, token: String) -> any
 
     println!("total id = {total}");
     if skipped > 0 {
-        println!("but, {skipped} were skipped. leaving {}", work_items.len());
+        println!("but, {skipped} were skipped as being previously inserted.");
+    }
+
+    if time_cutoff > 0 {
+        println!("and, {time_cutoff} didn't make the cut.");
+    }
+
+    if time_cutoff > 0 || skipped > 0 {
+        println!("leaving {} to be processed", work_items.len());
     }
 
     let bar = styled_bar(work_items.len() as u64);
