@@ -4,7 +4,7 @@ use check::check_cutoff;
 use chrono::Utc;
 use clap::{Parser, Subcommand};
 use import::import;
-use insert::insert_to_stdb;
+use insert::insert_to_qstash;
 
 pub mod progress;
 pub mod tables;
@@ -48,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
 
     match args.command {
         Command::Import { file } => import(file).await,
-        Command::Insert { cutoff, token } => insert_to_stdb(cutoff, token).await,
+        Command::Insert { cutoff, token } => insert_to_qstash(cutoff, token).await,
         Command::Check { cutoff } => check_cutoff(cutoff).await,
     }
 }
